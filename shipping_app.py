@@ -24,7 +24,7 @@ box_models = list(capacity_table.keys())
 # ------------------------------------------------------
 @st.cache_data
 def load_price_excel():
-    truck = pd.read_excel("湖州始发精温车价格.xlsx")
+    truck = pd.read_excel("湖州始发精温车子价格.xlsx")
     box = pd.read_excel("湖州始发精温箱子价格.xlsx")
     return truck, box
 
