@@ -1,363 +1,182 @@
-# streamlit_app.py
 import streamlit as st
 import pandas as pd
 import math
-import re
+import numpy as np
 
 st.set_page_config(page_title="最优发货方案工具", layout="wide")
 st.title("📦 最优发货方案工具")
 
 # -------------------------
-# 容量表（不变）
+
+# 上传 Excel
+
 # -------------------------
+
+st.sidebar.header("上传 Excel 文件")
+car_file = st.sidebar.file_uploader("上传车价 Excel", type=["xlsx"])
+box_file = st.sidebar.file_uploader("上传箱子 Excel", type=["xlsx"])
+
+if car_file is None or box_file is None:
+st.warning("请上传车价和箱子 Excel 文件")
+st.stop()
+
+car_df = pd.read_excel(car_file)
+box_df = pd.read_excel(box_file)
+
+# -------------------------
+
+# 用户输入
+
+# -------------------------
+
+st.subheader("选择线路和数量")
+start_city = st.selectbox("始发市", sorted(car_df["始发市"].unique()))
+end_city = st.selectbox("到达市", sorted(car_df["到达市"].unique()))
+a_qty = st.number_input("A货数量（盒）", min_value=0, value=100)
+b_qty = st.number_input("B货数量（盒）", min_value=0, value=100)
+
+total_boxes = int(a_qty + b_qty)
+st.write(f"总箱数：**{total_boxes}**（货物类型：{'1+2' if a_qty>0 and b_qty>0 else '1' if a_qty>0 else '2'}）")
+
+# -------------------------
+
+# 箱子信息
+
+# -------------------------
+
 capacity_table = {
-    "EV-6":   {"1+2": 18,  "1": 45,  "2": 36},
-    "EV-14":  {"1+2": 40,  "1": 80,  "2": 80},
-    "EV-32":  {"1+2": 100, "1": 210, "2": 200},
-    "EV-60":  {"1+2": 200, "1": 420, "2": 405},
-    "EV-96":  {"1+2": 300, "1": 620, "2": 600},
-    "EV-128": {"1+2": 340, "1": 700, "2": 680},
+"EV-6": 18,
+"EV-14": 40,
+"EV-32": 100,
+"EV-60": 200,
+"EV-96": 300,
+"EV-128": 340
 }
 box_models = list(capacity_table.keys())
 
-# -------------------------
-# 工具：规范化字符串（用于匹配省/市）
-# -------------------------
-def normalize(s):
-    """规范化省市字符串：去首尾空格、小写、去除全角半角空格"""
-    if pd.isna(s):
-        return ""
-    return str(s).strip().replace("　", "").replace(" ", "").lower()
+# 去除空格
+
+box_df = box_df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
 # -------------------------
-# 读取 Excel（缓存）
-# -------------------------
-@st.cache_data
-def load_excels():
-    # 请确保文件名与仓库里的文件一致
-    truck_df = pd.read_excel("湖州始发精温车子价格.xlsx")
-    box_df = pd.read_excel("湖州始发精温箱价格.xlsx")
-    return truck_df, box_df
 
-try:
-    truck_df, box_df = load_excels()
-except FileNotFoundError as e:
-    st.error(
-        "找不到 Excel 文件，请确保仓库根目录有：\n"
-        "- 湖州始发精温车子价格.xlsx\n- 湖州始发精温箱价格.xlsx"
-    )
-    st.stop()
+# 辅助函数
 
 # -------------------------
-# 列名查找函数（更宽容）
-# -------------------------
-def find_column(df, candidates):
-    """从候选列名列表中返回第一个存在的列名，或者 None"""
-    cols = df.columns.astype(str).tolist()
-    for c in candidates:
-        for col in cols:
-            if col.strip().lower() == c.strip().lower():
-                return col
-            # 也允许候选词出现在列名中（例如 '到达省份' 与 '到达省'）
-            if c.strip().lower() in col.strip().lower():
-                return col
-    return None
 
-# 候选列表
-to_prov_candidates = ["到达省","目的省","到省","province","到达省份","到省份"]
-to_city_candidates = ["到达市","目的市","到市","city","到达城市","到城市"]
-from_prov_candidates = ["始发省","出发省","始发省份","出发省份"]
-from_city_candidates = ["始发市","出发市","始发城市","出发城市"]
+def get_box_price(box_type):
+row = box_df[(box_df["始发市"]==start_city) & (box_df["到达市"]==end_city)]
+if row.empty:
+return None
+return float(row.iloc[0][box_type])
 
-to_prov_col = find_column(truck_df, to_prov_candidates)
-to_city_col = find_column(truck_df, to_city_candidates)
+def get_car_price(total_weight):
+row = car_df[(car_df["始发市"]==start_city) & (car_df["到达市"]==end_city)]
+if row.empty:
+return None
+weight = total_weight
+if weight <=20:
+unit = float(row.iloc[0]["1-20KG"])
+elif weight<=50:
+unit = float(row.iloc[0]["20-50KG"])
+elif weight<=100:
+unit = float(row.iloc[0]["50-100KG"])
+elif weight<=500:
+unit = float(row.iloc[0]["100-500KG"])
+else:
+unit = float(row.iloc[0][">500KG"])
+cost = max(weight*unit, float(row.iloc[0]["最低收费元/票"]))
+return cost
 
-if not to_prov_col or not to_city_col:
-    st.error("在车价 Excel 中未找到目的省/市列（列名）。请检查表头，并确保包含到达省/到达市或类似字段。")
-    st.write("Truck table columns:", truck_df.columns.tolist())
-    st.stop()
-
-# 生成省下拉与市下拉（从 truck_df 提取）
-province_list = sorted(truck_df[to_prov_col].dropna().unique(), key=lambda x: str(x))
-province = st.selectbox("选择目的省", province_list)
-
-city_list = sorted(truck_df[truck_df[to_prov_col] == province][to_city_col].dropna().unique(), key=lambda x: str(x))
-city = st.selectbox("选择目的市", city_list)
-
-# -------------------------
-# 输入数量
-# -------------------------
-col1, col2 = st.columns(2)
-with col1:
-    qty_1 = st.number_input("A货数量（盒）", 0, step=1, value=0)
-with col2:
-    qty_2 = st.number_input("B货数量（盒）", 0, step=1, value=0)
-
-total_qty = int(qty_1 + qty_2)
-if total_qty <= 0:
-    st.warning("请输入要运输的货物数量（A 或 B 或两者）")
-    st.stop()
-
-type_key = "1+2" if qty_1 > 0 and qty_2 > 0 else ("1" if qty_1 > 0 else "2")
-st.markdown(f"**总盒数：{total_qty}（货物类型：{type_key}）**")
-
-# -------------------------
-# 预处理：箱子表与车表的到达列
-# -------------------------
-box_cols = [c for c in box_df.columns.astype(str) if re.search(r'ev[\s\-_]?6|ev[\s\-_]?14|ev[\s\-_]?32|ev[\s\-_]?60|ev[\s\-_]?96|ev[\s\-_]?128', c, re.I)]
-box_to_prov = find_column(box_df, to_prov_candidates)
-box_to_city = find_column(box_df, to_city_candidates)
-
-if not box_to_prov or not box_to_city:
-    st.warning("箱子价格表未找到到达省/市列（会跳过箱子匹配）。")
-    # 仍然允许继续，但箱子部分会返回 None
+def solve_box_combination(total_boxes):
+# 完全背包动态规划：dp[i] = 最小费用, path[i]=最后一个选择箱型
+dp = [float('inf')] * (total_boxes+1)
+path = [-1]*(total_boxes+1)
+dp[0] = 0
+for i in range(1,total_boxes+1):
+for box in box_models:
+cap = capacity_table[box]
+price = get_box_price(box)
+if price is None or cap>i:
+continue
+if dp[i-cap]+price < dp[i]:
+dp[i] = dp[i-cap]+price
+path[i] = box
+if dp[total_boxes]==float('inf'):
+return None
+# 反推组合
+res = {}
+i = total_boxes
+while i>0:
+box = path[i]
+if box not in res:
+res[box]=0
+res[box]+=1
+i -= capacity_table[box]
+return res, dp[total_boxes]
 
 # -------------------------
-# 在 truck_df 中识别“最低收费”与各重量区间列（保留原逻辑，但更健壮）
-# -------------------------
-cols = truck_df.columns.astype(str).tolist()
-min_fee_candidates = ["最低收费","最低","min_fee","min charge","最低收取","最低价格"]
-min_fee_col = None
-for col in cols:
-    low = col.lower().replace(" ", "")
-    for c in min_fee_candidates:
-        if c.replace(" ", "") in low:
-            min_fee_col = col
-            break
-    if min_fee_col:
-        break
 
-# 重量区间映射（尝试把常见区间抓出来）
-bands = [("1-20", (1,20)), ("20-50", (20,50)), ("50-100", (50,100)), ("100-500", (100,500)), (">500", (500, None))]
-band_col_map = {}
-for col in cols:
-    col_norm = col.lower().replace(" ", "").replace("kg","")
-    for key, rng in bands:
-        patterns = [
-            key.replace("-", ""),
-            key.replace("-", "_"),
-            key,
-            key.replace("-", "–"),
-            key.replace("-", "—"),
-            key.replace("-", "to"),
-        ]
-        for p in patterns:
-            if p in col_norm:
-                band_col_map[key] = col
-                break
+# 计算方案
 
 # -------------------------
-# 计算重量
-# -------------------------
-def calc_weight(qty):
-    # 原逻辑：每 100 盒 = 3.6 吨  => weight = qty/100*3.6（单位：吨）
-    return qty / 100.0 * 3.6
 
-# -------------------------
-# 获取箱子价格（市级优先、省级备选）
-# -------------------------
-def get_box_price_for(model, province_value, city_value):
-    """返回 float 价格或 None"""
-    if not box_cols or not box_to_prov or not box_to_city:
-        return None
-
-    # 规范化输入
-    norm_prov = normalize(province_value)
-    norm_city = normalize(city_value)
-
-    def extract_price_from_row(row):
-        for col in box_cols:
-            col_norm = re.sub(r'\s+', '', str(col)).lower()
-            model_norm = model.replace("-", "").lower()
-            if model_norm in col_norm:
-                try:
-                    v = row[col]
-                    if pd.isna(v):
-                        return None
-                    return float(v)
-                except Exception:
-                    return None
-        return None
-
-    # 市级匹配（使用 normalize 比较）
-    for idx, r in box_df.iterrows():
-        if normalize(r[box_to_prov]) == norm_prov and normalize(r[box_to_city]) == norm_city:
-            v = extract_price_from_row(r)
-            if v is not None:
-                return v
-
-    # 省级匹配（市为空或没有市匹配）
-    for idx, r in box_df.iterrows():
-        if normalize(r[box_to_prov]) == norm_prov:
-            v = extract_price_from_row(r)
-            if v is not None:
-                return v
-
-    return None
-
-# -------------------------
-# 计算车费（单行）
-# -------------------------
-def calc_truck_cost_from_row(weight, row):
-    # 读取最低收费
-    low = None
-    if min_fee_col and min_fee_col in row.index:
-        try:
-            low = float(row[min_fee_col])
-        except:
-            low = None
-
-    # 根据 weight 选择 band_key
-    if weight <= 20:
-        band_key = "1-20"
-    elif weight <= 50:
-        band_key = "20-50"
-    elif weight <= 100:
-        band_key = "50-100"
-    elif weight <= 500:
-        band_key = "100-500"
-    else:
-        band_key = ">500"
-
-    unit = None
-    if band_key in band_col_map:
-        colname = band_col_map[band_key]
-        try:
-            unit = float(row[colname])
-        except:
-            unit = None
-
-    # 退化匹配：检查列名里是否包含带区间的关键词
-    if unit is None:
-        for col in row.index:
-            name = str(col).lower().replace(" ", "")
-            if band_key.replace("-", "") in name:
-                try:
-                    unit = float(row[col])
-                    break
-                except:
-                    pass
-
-    if unit is None:
-        return None
-
-    cost = weight * unit
-    if low is not None:
-        try:
-            cost = max(cost, float(low))
-        except:
-            pass
-    return float(cost)
-
-# -------------------------
-# 在选择后，预先计算匹配到的truck行（供显示与生成方案使用）
-# -------------------------
-rows_matched = truck_df[(truck_df[to_prov_col].apply(lambda x: normalize(x)) == normalize(province)) &
-                        (truck_df[to_city_col].apply(lambda x: normalize(x)) == normalize(city))]
-
-# -------------------------
-# 生成方案函数（使用外层 rows_matched）
-# -------------------------
-def generate_box_plans():
-    plans = []
-    for model in box_models:
-        cap = capacity_table[model][type_key]
-        price = get_box_price_for(model, province, city)
-        if price is None:
-            continue
-        need = math.ceil(total_qty / cap)
-        cost = need * price
-        plans.append({"方案类型":"箱子","方式":model,"箱子数":need,"车":"无","总费用":cost})
-    return plans
-
-def generate_truck_plans():
-    plans = []
-    weight = calc_weight(total_qty)
-    rows = rows_matched
-    if rows.empty:
-        return plans
-    for idx, row in rows.iterrows():
-        cost = calc_truck_cost_from_row(weight, row)
-        if cost is None:
-            continue
-        # 生成标签：优先找流向类型/车型等列
-        label = None
-        for cand in ["流向类型","车型","重量类型","运输方式"]:
-            if cand in row.index and not pd.isna(row[cand]):
-                label = str(row[cand])
-                break
-        if label is None:
-            label = f"方案-{idx}"
-        plans.append({"方案类型":"整车","方式":label,"箱子数":0,"车":label,"总费用":float(cost)})
-    return plans
-
-def generate_mix_plans():
-    plans = []
-    rows = rows_matched
-    if rows.empty:
-        return plans
-    for model in box_models:
-        cap = capacity_table[model][type_key]
-        box_price = get_box_price_for(model, province, city)
-        if box_price is None:
-            continue
-        # 最多使用多少整箱（至少保留 1 个箱子）
-        max_boxes = total_qty // cap
-        if max_boxes <= 0:
-            continue
-        for n in range(1, max_boxes + 1):
-            remain = total_qty - n * cap
-            weight = calc_weight(remain)
-            for idx, row in rows.iterrows():
-                truck_cost = calc_truck_cost_from_row(weight, row)
-                if truck_cost is None:
-                    continue
-                total_cost = n * box_price + truck_cost
-                label = None
-                for cand in ["流向类型","车型","重量类型","运输方式"]:
-                    if cand in row.index and not pd.isna(row[cand]):
-                        label = str(row[cand])
-                        break
-                if label is None:
-                    label = f"方案-{idx}"
-                plans.append({"方案类型":"混合","方式":f"{model}×{n} + {label}","箱子数":n,"车":label,"总费用":float(total_cost)})
-    return plans
-
-# -------------------------
-# 计算并显示结果（按钮触发）
-# -------------------------
 if st.button("计算最优方案"):
-    all_plans = []
-    all_plans += generate_box_plans()
-    all_plans += generate_truck_plans()
-    all_plans += generate_mix_plans()
+results = []
 
-    if not all_plans:
-        st.error("未找到任何可用方案。可能原因：目标城市在 Excel 中缺失箱子或车价数据。页面下方显示已读取的表头和样本，请检查。")
-    else:
-        df = pd.DataFrame(all_plans)
-        df = df.sort_values("总费用").reset_index(drop=True)
-        st.success("计算完成，方案如下（已按总费用升序排序，最优置顶）")
-        st.dataframe(df)
-        st.subheader("🏆 最优方案")
-        st.write(df.iloc[0])
+```
+# 1️⃣ 整车方案
+total_weight = total_boxes*0.036*1  # 100盒3.6kg
+car_cost = get_car_price(total_weight)
+if car_cost is not None:
+    results.append({"方案类型":"整车","方式":"整车运输","箱子数":0,"车":1,"总费用":car_cost})
 
-# -------------------------
-# 计算后调试输出：箱子单价来源与匹配到的整车行数
-# -------------------------
-price_debug = {}
-for m in box_models:
-    p = get_box_price_for(m, province, city)
-    price_debug[m] = p if p is not None else "无"
-st.write("箱子单价（若为无表示该城市/省无数据）：", price_debug)
+# 2️⃣ 纯箱子方案（混合）
+box_comb, box_cost = solve_box_combination(total_boxes)
+if box_comb is not None:
+    label = " + ".join([f"{k}×{v}" for k,v in box_comb.items()])
+    results.append({"方案类型":"箱子","方式":label,"箱子数":total_boxes,"车":0,"总费用":box_cost})
 
-st.write("匹配到的整车行数：", len(rows_matched))
-if len(rows_matched) > 0:
-    st.write("整车样例行（用于计费）：")
-    st.write(rows_matched.head(3))
+# 3️⃣ 混合方案（可选，如果你想混合部分车 + 箱子）
+# 这里因为车按重量计费，可以理解为箱子剩余部分用车运输
+# 我们可以尝试每种箱子数量组合，剩余重量用车
+# 为简单，可枚举每种箱子数1~total_boxes
+for box_type in box_models:
+    price = get_box_price(box_type)
+    if price is None:
+        continue
+    cap = capacity_table[box_type]
+    max_count = math.ceil(total_boxes/cap)
+    for n in range(1,max_count):
+        remain_boxes = total_boxes - n*cap
+        remain_weight = remain_boxes*0.036
+        remain_car_cost = get_car_price(remain_weight)
+        if remain_car_cost is None:
+            continue
+        total_cost = n*price + remain_car_cost
+        results.append({
+            "方案类型":"混合",
+            "方式":f"{box_type}×{n} + 剩余用车",
+            "箱子数":n,
+            "车":remain_weight,
+            "总费用":total_cost
+        })
 
-# 额外：显示读取到的表头，便于调试列名问题
-with st.expander("查看读取到的表头（调试用）"):
-    st.write("车价表列头：", truck_df.columns.tolist())
-    st.write("箱子表列头：", box_df.columns.tolist())
+if len(results)==0:
+    st.error("没有可行方案，请检查 Excel 数据")
+    st.stop()
+
+df = pd.DataFrame(results)
+df = df.sort_values("总费用").reset_index(drop=True)
+
+st.success("计算完成，方案如下（已按总费用升序排序）")
+st.dataframe(df)
+
+st.subheader("🏆 最优方案")
+st.write(df.iloc[0])
+
+# 显示箱子单价调试
+price_debug = {box:get_box_price(box) if get_box_price(box) is not None else "无" for box in box_models}
+st.write("箱子单价（若为无表示该城市/省无数据）：",price_debug)
+```
 
