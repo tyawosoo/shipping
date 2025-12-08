@@ -332,7 +332,7 @@ for r in range(1, 3+1):
                     "车":truck_label,
                     "总费用":total_cost
                 })
- return plans
+return plans
 
 # -------------------------
 # 计算并显示结果（按钮触发）
