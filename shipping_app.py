@@ -332,3 +332,15 @@ if st.button("计算最优方案"):
         st.subheader("🏆 最优方案")
         st.write(df.iloc[0])
 
+# 在计算后，输出每个箱型的价格来源（市级/省级/无）
+price_debug = {}
+for m in box_models:
+    p = get_box_price_for(m)
+    price_debug[m] = p if p is not None else "无"
+st.write("箱子单价（若为无表示该城市/省无数据）：", price_debug)
+
+# 输出用于本次计算的整车价格行数与示例
+st.write("匹配到的整车行数：", len(rows))
+if len(rows) > 0:
+    st.write("整车样例行（用于计费）：")
+    st.write(rows.head(3))
