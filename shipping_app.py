@@ -89,7 +89,7 @@ st.markdown(f"**总盒数：{total_qty}（货物类型：{type_key}）**")
 # 辅助：找箱子价格
 # -------------------------
 # box_df 列可能包含 EV-6, EV-14 ... 或用别名；先找到列名里包含 EV 的列
-box_cols = [c for c in box_df.columns.astype(str) if re.search(r'EV[\s\-_]?6|EV[\s\-_]?14|EV[\s\-_]?32|EV[\s\-_]?60|EV[\s\-_]?96|EV[\s\-_]?128', c, re.I)]
+box_cols = [c for c in box_df.columns.astype(str) if re.search(r'EV-6|EV-14|EV-32|EV-60|EV-96|EV-128', c, re.I)]
 # 找到到达列（与 truck 相同的候选）
 box_to_prov = find_column(box_df, to_prov_candidates)
 box_to_city = find_column(box_df, to_city_candidates)
