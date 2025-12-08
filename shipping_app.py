@@ -338,10 +338,10 @@ if rows_matched.empty or box_df is None:
 # 计算并显示结果（按钮触发）
 # -------------------------
 if st.button("计算最优方案"):
-all_plans = []
-all_plans += generate_box_plans() # 纯箱子方案
-all_plans += generate_truck_plans() # 纯整车方案
-all_plans += generate_mix_plans_advanced() # 增强混合方案
+    all_plans = []
+    all_plans += generate_box_plans() # 纯箱子方案
+    all_plans += generate_truck_plans() # 纯整车方案
+    all_plans += generate_mix_plans_advanced() # 增强混合方案
 
 if not all_plans:
     st.error("未找到任何可用方案，可能目标城市在 Excel 中缺失数据")
