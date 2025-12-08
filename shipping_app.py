@@ -153,22 +153,40 @@ def calc_weight(qty):
     return qty / 100.0 * 3.6
 
 # 通用：从匹配行中读取箱子价格（若无数据返回 None）
+# 替换原来的 get_box_price_for 函数为这个更健壮的版本
 def get_box_price_for(model):
     if not box_to_prov or not box_to_city or not box_cols:
         return None
-    row = box_df[(box_df[box_to_prov] == province) & (box_df[box_to_city] == city)]
-    if row.empty:
-        return None
-    # 找最匹配的列名（忽略大小写和空格）
-    for col in box_cols:
-        if re.search(model.replace("-", "").lower(), col.replace(" ", "").lower()):
-            try:
-                v = row[col].values[0]
-                if pd.isna(v):
+    # 先尝试市级匹配
+    row_city = box_df[(box_df[box_to_prov] == province) & (box_df[box_to_city] == city)]
+    def extract_price_from_row(row):
+        for col in box_cols:
+            # 忽略大小写、空格，按模型名匹配列
+            if re.search(model.replace("-", "").lower(), col.replace(" ", "").lower()):
+                try:
+                    v = row[col]
+                    if pd.isna(v):
+                        return None
+                    return float(v)
+                except Exception:
                     return None
-                return float(v)
-            except Exception:
-                return None
+        return None
+
+    if not row_city.empty:
+        v = extract_price_from_row(row_city.iloc[0])
+        if v is not None:
+            return v
+
+    # 市级没有，尝试省级（退回到省级价格）
+    row_prov = box_df[(box_df[box_to_prov] == province)]
+    if not row_prov.empty:
+        # 如果存在多行省级数据，先取第一行非空的价格
+        for idx, r in row_prov.iterrows():
+            v = extract_price_from_row(r)
+            if v is not None:
+                return v
+
+    # 如果仍然没找到，返回 None
     return None
 
 # 计算某一行（pandas Series）的车费，行需包含最低收费与区间单价列或近似列
