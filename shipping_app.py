@@ -4,8 +4,8 @@ import pandas as pd
 import math
 import re
 
-st.set_page_config(page_title="最优发货方案工具（兼容Excel列名）", layout="wide")
-st.title("📦 最优发货方案工具（兼容Excel列名）")
+st.set_page_config(page_title="最优发货方案工具", layout="wide")
+st.title("📦 最优发货方案工具")
 
 # -------------------------
 # 容量表（不变）
