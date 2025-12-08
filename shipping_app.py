@@ -292,8 +292,8 @@ def generate_truck_plans():
     return plans
 
 def generate_mix_plans():
-     plans = []
-   if rows_matched.empty or box_df is None:
+       plans = []
+if rows_matched.empty or box_df is None:
        return plans
 
 # 先生成所有可能的箱型组合（为了性能，组合数限制在合理范围，例如 1~3 种箱型组合）
