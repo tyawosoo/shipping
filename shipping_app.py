@@ -298,7 +298,7 @@ if rows_matched.empty or box_df is None:
 
 # 先生成所有可能的箱型组合（为了性能，组合数限制在合理范围，例如 1~3 种箱型组合）
 # 这里使用简单策略：最多组合 2~3 种箱型
-   for r in range(1, 3+1):
+for r in range(1, 3+1):
       for box_combo in itertools.combinations_with_replacement(box_models, r):
         # 生成每种箱型可能数量
         max_counts = [math.ceil(total_qty / capacity_table[b][type_key]) for b in box_combo]
@@ -332,7 +332,7 @@ if rows_matched.empty or box_df is None:
                     "车":truck_label,
                     "总费用":total_cost
                 })
-   return plans
+ return plans
 
 # -------------------------
 # 计算并显示结果（按钮触发）
