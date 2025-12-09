@@ -11,8 +11,8 @@ st.title("📦 最优发货方案工具（自动读取 Excel 价格，多方案�
 # -------------------------
 @st.cache_data
 def load_data():
-    truck_df = pd.read_excel("湖州始发精温车价格.xlsx")
-    box_df = pd.read_excel("湖州始发精温箱子价格.xlsx")
+    truck_df = pd.read_excel("湖州始发精温车子价格.xlsx")
+    box_df = pd.read_excel("湖州始发精温箱价格.xlsx")
     return truck_df, box_df
 
 truck_df, box_df = load_data()
