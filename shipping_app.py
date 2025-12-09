@@ -95,45 +95,69 @@ def get_truck_price(province, city, weight):
 # -------------------------
 # 计算纯箱子方案（箱子可混用）
 # -------------------------
-def generate_box_only_plans(total_units, cargo_type, box_prices):
-    plans = []
+import math
 
-    # 所有箱型组合（允许任意数量）
-    box_models = list(capacity_table.keys())
+def generate_box_only_plans(total_units, cargo_type, box_prices, top_k=3):
+    """
+    使用无界背包 DP 求最小花费达到 >= total_units 的箱子组合。
+    返回 top_k 个不同的较优箱子方案（默认返回 1~3 个），每个方案是 dict:
+    {"方案类型":"纯箱子", "组成":{model:count,...}, "费用":cost, "覆盖盒数":cover}
+    """
+    models = list(capacity_table.keys())
+    caps = [capacity_table[m][cargo_type] for m in models]
+    prices = [float(box_prices[m]) for m in models]
 
-    # 遍历不同的组合深度
-    for r in range(1, 4):  # 最多用 3 种型号组合，提高速度
-        for combo in itertools.combinations_with_replacement(box_models, r):
-            # 使用容量最大优先装
-            capacity_sorted = sorted(combo, key=lambda x: capacity_table[x][cargo_type], reverse=True)
+    max_cap = max(caps)
+    # 我们用的DP容量上界：至少 total_units 到 total_units + max_cap
+    C = total_units + max_cap
 
-            remain = total_units
-            detail = {}
-            total_cost = 0
+    # dp[c] = 最小费用达到恰好容量 c（用大数初始化）
+    INF = 10**18
+    dp = [INF] * (C + 1)
+    prev = [(-1, -1)] * (C + 1)  # 回溯 (model_index, prev_capacity)
+    dp[0] = 0
 
-            for model in capacity_sorted:
-                cap = capacity_table[model][cargo_type]
-                count = remain // cap
-                if count > 0:
-                    detail[model] = count
-                    remain -= count * cap
-                    total_cost += count * box_prices[model]
+    # 无界背包：对每个模型，允许无限次使用
+    for i, (cap, price) in enumerate(zip(caps, prices)):
+        for c in range(cap, C + 1):
+            if dp[c - cap] + price < dp[c]:
+                dp[c] = dp[c - cap] + price
+                prev[c] = (i, c - cap)
 
-            # 剩余部分用最小箱子装
-            if remain > 0:
-                small = "EV-6"
-                count = math.ceil(remain / capacity_table[small][cargo_type])
-                detail[small] = detail.get(small, 0) + count
-                total_cost += count * box_prices[small]
-                remain = 0
+    # 在 c >= total_units 中找最小费用的若干解（top_k）
+    candidates = []
+    for c in range(total_units, C + 1):
+        if dp[c] < INF:
+            candidates.append((dp[c], c))
+    if not candidates:
+        return []  # 无解
 
-            plans.append({
-                "方案类型": "纯箱子",
-                "组成": detail,
-                "费用": total_cost
-            })
+    # 取费用最小的 top_k 个不同 c（可能存在相同费用的不同 c）
+    candidates.sort(key=lambda x: x[0])
+    bests = []
+    seen = set()
+    for cost, cover in candidates:
+        if cost in seen:
+            continue
+        seen.add(cost)
+        # 回溯构造箱子数量
+        counts = {m: 0 for m in models}
+        cur = cover
+        while cur > 0:
+            idx, prev_c = prev[cur]
+            if idx == -1:
+                # 理论上不应该出现
+                break
+            counts[models[idx]] += 1
+            cur = prev_c
+        bests.append({"方案类型": "纯箱子",
+                      "组成": {k: v for k, v in counts.items() if v > 0},
+                      "覆盖盒数": cover,
+                      "费用": float(cost)})
+        if len(bests) >= top_k:
+            break
 
-    return plans
+    return bests
 
 # -------------------------
 # 计算整车方案
