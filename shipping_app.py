@@ -4,7 +4,7 @@ import itertools
 import math
 
 st.set_page_config(page_title="最优发货方案工具", layout="wide")
-st.title("📦 最优发货方案工具（自动读取 Excel 价格，多方案对比）")
+st.title("📦 最优发货方案工具")
 
 # -------------------------
 # 读取 Excel 文件
