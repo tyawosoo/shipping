@@ -43,7 +43,7 @@ A = col1.number_input("A 货数量（盒）", min_value=0, value=100)
 B = col2.number_input("B 货数量（盒）", min_value=0, value=100)
 
 total_units = A + B
-if A*B=0:
+if A*B==0:
     total_units = A + B
 else:
     total_units = (A + B)/2
