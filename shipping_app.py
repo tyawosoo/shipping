@@ -42,11 +42,11 @@ col1, col2 = st.columns(2)
 A = col1.number_input("A 货数量（盒）", min_value=0, value=100)
 B = col2.number_input("B 货数量（盒）", min_value=0, value=100)
 
-total_units = A + B
 if A*B==0:
-    total_units = A + B
+    total_units = int(A + B)
 else:
-    total_units = (A + B)/2
+    total_units = int( (A + B)/2)
+    
 st.write(f"### 总盒数：{total_units} 盒")   
 
 # 货物类型：1 / 2 / 1+2
