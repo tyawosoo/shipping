@@ -42,7 +42,7 @@ col1, col2 = st.columns(2)
 A = col1.number_input("A 货数量（盒）", min_value=0, value=100)
 B = col2.number_input("B 货数量（盒）", min_value=0, value=100)
 
-if A<>B:
+if A!=B:
     total_units = int(A + B)
 else:
     total_units = int( (A + B)/2)
