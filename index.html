@@ -3,208 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>深海冷链时效预测</title>
+  <title>最优发货方案</title>
   <style>
     :root {
-      --bg: #f5efe4;
-      --panel: rgba(255, 252, 246, 0.88);
-      --panel-strong: #fffaf1;
-      --text: #1f2a1f;
-      --muted: #657062;
+      --bg: #f4eee2;
+      --panel: rgba(255,251,243,0.9);
+      --panel-strong: #fffaf2;
+      --text: #1d2620;
+      --muted: #677267;
       --brand: #0f766e;
       --brand-deep: #115e59;
-      --line: rgba(31, 42, 31, 0.12);
-      --shadow: 0 18px 50px rgba(31, 42, 31, 0.12);
+      --accent: #c56b1e;
+      --line: rgba(29,38,32,0.1);
+      --shadow: 0 18px 45px rgba(29,38,32,0.12);
       --radius: 24px;
       --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: var(--font);
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 28%),
-        radial-gradient(circle at top right, rgba(217, 119, 6, 0.18), transparent 24%),
-        linear-gradient(160deg, #f8f2e8 0%, #f2ead9 48%, #ecf3ef 100%);
-    }
-    .shell { width: min(1100px, calc(100% - 32px)); margin: 32px auto; display: grid; gap: 20px; }
-    .hero, .panel { background: var(--panel); border: 1px solid rgba(255,255,255,.55); border-radius: var(--radius); box-shadow: var(--shadow); backdrop-filter: blur(12px); }
-    .hero { padding: 28px; position: relative; overflow: hidden; }
-    .hero::after { content: ""; position: absolute; inset: auto -20% -45% auto; width: 280px; height: 280px; border-radius: 50%; background: radial-gradient(circle, rgba(15,118,110,.22) 0%, rgba(15,118,110,0) 70%); }
-    h1 { margin: 0 0 8px; font-size: clamp(30px, 6vw, 46px); line-height: 1.05; letter-spacing: -0.03em; }
-    .hero p, .hint, .empty, .tiny { color: var(--muted); }
-    .hero p { margin: 0; max-width: 760px; font-size: 15px; line-height: 1.7; }
-    .badge-row, .stat-row, .actions, .pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
-    .badge-row { margin-top: 18px; }
-    .badge, .pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: rgba(15,118,110,.08); color: var(--brand-deep); font-size: 13px; font-weight: 600; }
-    .layout { display: grid; grid-template-columns: minmax(320px, 420px) minmax(0, 1fr); gap: 20px; }
-    .panel { padding: 22px; }
-    .panel h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: -0.02em; }
-    .grid, .field { display: grid; gap: 14px; }
-    .field { gap: 8px; }
-    label { font-size: 13px; font-weight: 700; color: var(--muted); }
-    select, input, button, textarea { width: 100%; border: 1px solid var(--line); border-radius: 16px; font: inherit; }
-    select, input, textarea { padding: 12px 14px; background: rgba(255,255,255,.84); color: var(--text); }
-    textarea { min-height: 112px; resize: vertical; }
-    button { padding: 13px 16px; border: none; font-weight: 700; cursor: pointer; transition: transform .18s ease, opacity .18s ease, background .18s ease; }
-    button:hover { transform: translateY(-1px); }
-    .primary { background: linear-gradient(135deg, var(--brand), #14b8a6); color: white; }
-    .secondary { background: rgba(15,118,110,.09); color: var(--brand-deep); }
-    .result-card { padding: 22px; border-radius: 22px; background: linear-gradient(145deg, rgba(15,118,110,.1), rgba(255,255,255,.88)); border: 1px solid rgba(15,118,110,.14); }
-    .result-card strong { font-size: clamp(32px, 7vw, 48px); line-height: 1; letter-spacing: -0.05em; color: var(--brand-deep); }
-    .result-card h3 { margin: 0 0 6px; font-size: 15px; color: var(--muted); }
-    .result-card p { margin: 8px 0 0; line-height: 1.7; }
-    .stat-row { margin-top: 16px; }
-    .stat { flex: 1 1 150px; padding: 14px 16px; background: var(--panel-strong); border-radius: 18px; border: 1px solid rgba(31,42,31,.06); }
-    .stat .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .stat .value { font-size: 20px; font-weight: 800; }
-    .list { display: grid; gap: 12px; margin-top: 14px; }
-    .row-card { padding: 16px; border-radius: 18px; border: 1px solid rgba(31,42,31,.08); background: rgba(255,255,255,.7); }
-    .row-card h4 { margin: 0 0 10px; font-size: 16px; }
-    .row-card p { margin: 6px 0; line-height: 1.6; }
-    .empty { padding: 24px; text-align: center; border: 1px dashed rgba(31,42,31,.14); border-radius: 18px; background: rgba(255,255,255,.5); }
-    .tiny { font-size: 12px; line-height: 1.6; }
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-      .shell { width: min(100% - 20px, 1100px); margin: 20px auto 28px; }
-      .hero, .panel { padding: 18px; }
-    }
+    body { margin:0; min-height:100vh; font-family:var(--font); color:var(--text); background: radial-gradient(circle at top left, rgba(15,118,110,.16), transparent 28%), radial-gradient(circle at top right, rgba(197,107,30,.18), transparent 24%), linear-gradient(160deg, #f8f2e8 0%, #f0e8da 48%, #edf5f0 100%); }
+    .shell { width:min(1180px, calc(100% - 28px)); margin:24px auto 40px; display:grid; gap:20px; }
+    .hero,.panel { background:var(--panel); border:1px solid rgba(255,255,255,.6); border-radius:var(--radius); box-shadow:var(--shadow); backdrop-filter: blur(12px); }
+    .hero { padding:28px; position:relative; overflow:hidden; }
+    .hero::after { content:""; position:absolute; right:-60px; bottom:-120px; width:260px; height:260px; border-radius:50%; background:radial-gradient(circle, rgba(15,118,110,.18) 0%, rgba(15,118,110,0) 70%); }
+    h1 { margin:0 0 8px; font-size:clamp(30px, 6vw, 46px); line-height:1.05; letter-spacing:-.03em; }
+    .hero p,.hint,.tiny,.empty { color:var(--muted); }
+    .hero p { margin:0; max-width:760px; line-height:1.7; }
+    .badge-row,.actions,.stats,.chips { display:flex; flex-wrap:wrap; gap:10px; }
+    .badge-row { margin-top:18px; }
+    .badge,.chip { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; background:rgba(15,118,110,.08); color:var(--brand-deep); font-size:13px; font-weight:700; }
+    .layout { display:grid; grid-template-columns:minmax(320px, 420px) minmax(0, 1fr); gap:20px; }
+    .panel { padding:22px; }
+    .panel h2 { margin:0 0 14px; font-size:20px; letter-spacing:-.02em; }
+    .grid,.field,.plan-list { display:grid; gap:14px; }
+    .field { gap:8px; }
+    label { font-size:13px; font-weight:700; color:var(--muted); }
+    select,input,button,textarea { width:100%; border:1px solid var(--line); border-radius:16px; font:inherit; }
+    select,input,textarea { padding:12px 14px; background:rgba(255,255,255,.86); color:var(--text); }
+    button { padding:13px 16px; border:none; cursor:pointer; font-weight:800; transition:transform .18s ease; }
+    button:hover { transform:translateY(-1px); }
+    .primary { background:linear-gradient(135deg, var(--brand), #14b8a6); color:#fff; }
+    .secondary { background:rgba(15,118,110,.09); color:var(--brand-deep); }
+    .highlight { padding:22px; border-radius:22px; background:linear-gradient(145deg, rgba(15,118,110,.1), rgba(255,255,255,.9)); border:1px solid rgba(15,118,110,.12); }
+    .highlight strong { display:block; font-size:clamp(28px, 7vw, 44px); line-height:1; letter-spacing:-.05em; color:var(--brand-deep); margin-top:6px; }
+    .highlight p { margin:8px 0 0; line-height:1.7; }
+    .stats { margin-top:16px; }
+    .stat { flex:1 1 150px; padding:14px 16px; background:var(--panel-strong); border-radius:18px; border:1px solid rgba(29,38,32,.06); }
+    .stat .label { font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .stat .value { font-size:18px; font-weight:800; }
+    .plan-card { padding:18px; border-radius:20px; border:1px solid rgba(29,38,32,.08); background:rgba(255,255,255,.72); }
+    .plan-card h3 { margin:0 0 10px; font-size:18px; }
+    .plan-card p { margin:6px 0; line-height:1.6; }
+    .empty { padding:24px; text-align:center; border:1px dashed rgba(29,38,32,.14); border-radius:18px; background:rgba(255,255,255,.5); }
+    .tiny { font-size:12px; line-height:1.6; }
+    textarea { min-height: 120px; resize: vertical; }
+    @media (max-width: 900px) { .layout { grid-template-columns:1fr; } .shell { width:min(100% - 18px, 1180px); margin:18px auto 28px; } .hero,.panel { padding:18px; } }
   </style>
 </head>
 <body>
   <div class="shell">
     <section class="hero">
-      <h1>深海冷链时效预测</h1>
-      <p>基于《深海冷链 冷链专线产品(运输网线图)-2022》整理。输入寄出地区和寄出日期，就能快速算出下次可发车时间、等待天数，以及按你的附加运输天数推算的预计送达日期。</p>
+      <h1>最优发货方案</h1>
+      <p>基于原始发货价格表重建。输入目的省市和 A/B 货数量后，页面会同时计算纯箱子、整车、车+箱子混合三类方案，并按总费用从低到高给出建议。</p>
       <div class="badge-row">
-        <span class="badge">适合直接分享给同事或客户</span>
-        <span class="badge">支持手机打开</span>
         <span class="badge">不再依赖 Streamlit</span>
+        <span class="badge">支持手机浏览器</span>
+        <span class="badge">自动给出前 5 个最优方案</span>
       </div>
     </section>
+
     <div class="layout">
       <section class="panel">
-        <h2>查询条件</h2>
+        <h2>计算条件</h2>
         <div class="grid">
-          <div class="field"><label for="province">省份</label><select id="province"></select></div>
-          <div class="field"><label for="city">城市</label><select id="city"></select></div>
-          <div class="field"><label for="district">区县</label><select id="district"></select></div>
-          <div class="field"><label for="shipDate">寄出日期</label><input id="shipDate" type="date"></div>
-          <div class="field"><label for="extraDays">附加运输天数</label><input id="extraDays" type="number" min="0" max="30" step="1" value="1"></div>
-          <div class="field"><label for="keyword">快速搜索区县</label><input id="keyword" type="text" placeholder="例如：平湖、乐清、临安区"></div>
-          <div class="actions"><button class="primary" id="predictBtn" type="button">立即预测</button><button class="secondary" id="copyBtn" type="button">复制结果文案</button></div>
-          <p class="tiny">说明：当前表格本质上是班次表，不含真实签收回单时长。这里的“几天送到”是按“距下次可发车等待天数 + 你设置的附加运输天数”估算，适合做对外快速答复。</p>
+          <div class="field"><label for="province">到达省</label><select id="province"></select></div>
+          <div class="field"><label for="city">到达市</label><select id="city"></select></div>
+          <div class="field"><label for="qtyA">A 货数量（盒）</label><input id="qtyA" type="number" min="0" step="1" value="100"></div>
+          <div class="field"><label for="qtyB">B 货数量（盒）</label><input id="qtyB" type="number" min="0" step="1" value="100"></div>
+          <div class="actions">
+            <button class="primary" id="calcBtn" type="button">计算最优方案</button>
+            <button class="secondary" id="copyBtn" type="button">复制推荐文案</button>
+          </div>
+          <p class="tiny">规则沿用原 `shipping_app.py�：A/B 都有货时按 `1+2` 容量计算，只有一类货时按对应容量计算；整车重量按 `总盒数 / 100 × 3.6kg` 估算。</p>
         </div>
       </section>
+
       <section class="panel">
-        <h2>预测结果</h2>
-        <div class="result-card" id="resultCard">
-          <h3>预计总耗时</h3>
-          <strong id="etaDays">-</strong>
-          <p id="summary">请选择地区并点击预测。</p>
-          <div class="stat-row">
-            <div class="stat"><div class="label">下次可发车</div><div class="value" id="nextDispatch">-</div></div>
-            <div class="stat"><div class="label">等待班次</div><div class="value" id="waitDays">-</div></div>
-            <div class="stat"><div class="label">预计送达</div><div class="value" id="arrivalDate">-</div></div>
+        <h2>最佳结果</h2>
+        <div class="highlight">
+          <div class="tiny">当前最低总费用</div>
+          <strong id="bestCost">-</strong>
+          <p id="bestSummary">请选择省市并点击计算。</p>
+          <div class="stats">
+            <div class="stat"><div class="label">总盒数</div><div class="value" id="totalUnits">-</div></div>
+            <div class="stat"><div class="label">货物类型</div><div class="value" id="cargoType">-</div></div>
+            <div class="stat"><div class="label">方案数量</div><div class="value" id="planCount">-</div></div>
           </div>
         </div>
-        <div class="field" style="margin-top:16px;"><label for="shareText">可直接转发的说明</label><textarea id="shareText" readonly></textarea></div>
-        <div class="pill-row" id="metaPills"></div>
+        <div class="field" style="margin-top:16px;">
+          <label for="shareText">可直接转发的推荐文案</label>
+          <textarea id="shareText" readonly></textarea>
+        </div>
+        <div class="chips" id="metaChips"></div>
       </section>
     </div>
+
     <section class="panel">
-      <h2>匹配线路明细</h2>
-      <p class="hint">如果某个城市下有多个区县班次不同，下面会一起列出来，方便横向对比。</p>
-      <div class="list" id="matches"></div>
+      <h2>全部候选方案</h2>
+      <p class="hint">默认展示费用最低的前 5 个方案。</p>
+      <div class="plan-list" id="plans"></div>
     </section>
   </div>
   <script>
-    const DATA = [{"province":"浙江省","city":"杭州市","district":"临安区","route":"杭州近郊","frequency":"1-2次/周","schedule":{"mon":"","tue":"发车","wed":"","thu":"发车","fri":"—"},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原13改24","startDate":"2022-04-16"},{"province":"浙江省","city":"杭州市","district":"建德市","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"发车","thu":"—","fri":"—"},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"增加周一","startDate":""},{"province":"浙江省","city":"杭州市","district":"桐庐县","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"—","fri":"—"},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"原24改13","startDate":""},{"province":"浙江省","city":"杭州市","district":"淳安县","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"发车","thu":"—","fri":"—"},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"增加周一","startDate":""},{"province":"浙江省","city":"杭州市","district":"富阳区","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"发车","fri":"—"},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原145改24","startDate":""},{"province":"浙江省","city":"湖州市","district":"湖州城区","route":"浙江嘉湖线","frequency":"2-3次/周","schedule":{"mon":"发车","tue":"发车","wed":"发车","thu":"湖州第一.湖州妇幼","fri":"发车"},"availableDays":["mon","tue","wed","thu","fri"],"dispatchNotes":"周四:湖州第一.湖州妇幼","remark":"无变化","startDate":"2022-04-16"},{"province":"浙江省","city":"湖州市","district":"德清","route":"","frequency":"","schedule":{"mon":"","tue":"—","wed":"发车","thu":"—","fri":"发车"},"availableDays":["wed","fri"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"湖州市","district":"安吉","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"—","thu":"—","fri":"发车"},"availableDays":["mon","fri"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"湖州市","district":"长兴","route":"","frequency":"","schedule":{"mon":"发车","tue":"发车","wed":"发车","thu":"发车","fri":"发车"},"availableDays":["mon","tue","wed","thu","fri"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"嘉兴市","district":"嘉兴城区","route":"","frequency":"1-2次/周","schedule":{"mon":"发车","tue":"发车","wed":"发车","thu":"发车","fri":"发车"},"availableDays":["mon","tue","wed","thu","fri"],"dispatchNotes":"","remark":"2345改235","startDate":"2022-04-16"},{"province":"浙江省","city":"嘉兴市","district":"嘉善","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"—","thu":"","fri":"发车"},"availableDays":["tue","fri"],"dispatchNotes":"","remark":"原145改25","startDate":""},{"province":"浙江省","city":"嘉兴市","district":"海宁","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"—","thu":"发车","fri":"—"},"availableDays":["mon","thu"],"dispatchNotes":"","remark":"35改14","startDate":""},{"province":"浙江省","city":"嘉兴市","district":"桐乡","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"—","thu":"发车","fri":"—"},"availableDays":["mon","thu"],"dispatchNotes":"","remark":"13改14","startDate":""},{"province":"浙江省","city":"嘉兴市","district":"海盐","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"25改成24","startDate":""},{"province":"浙江省","city":"嘉兴市","district":"平湖","route":"","frequency":"","schedule":{"mon":"发车","tue":"平湖第一人民医院、平湖市中医院深海保温箱自送","wed":"发车","thu":"平湖第一人民医院、平湖市中医院深海保温箱自送","fri":"—"},"availableDays":["mon","tue","wed","thu"],"dispatchNotes":"周二:平湖第一人民医院、平湖市中医院深海保温箱自送；周四:平湖第一人民医院、平湖市中医院深海保温箱自送","remark":"无变化","startDate":""},{"province":"浙江省","city":"宁波市","district":"宁波城区","route":"浙江宁波线","frequency":"1-4次/周","schedule":{"mon":"发车","tue":"发车","wed":"发车","thu":"发车","fri":"发车"},"availableDays":["mon","tue","wed","thu","fri"],"dispatchNotes":"","remark":"无变化","startDate":"2022-04-16"},{"province":"浙江省","city":"宁波市","district":"宁海","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"发车","thu":"发车","fri":"—"},"availableDays":["tue","wed","thu"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"宁波市","district":"奉化","route":"","frequency":"","schedule":{"mon":"—","tue":"—","wed":"发车","thu":"—","fri":"—"},"availableDays":["wed"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"宁波市","district":"象山","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原周三改24","startDate":""},{"province":"浙江省","city":"宁波市","district":"镇海区","route":"","frequency":"","schedule":{"mon":"发车","tue":"发车","wed":"发车","thu":"发车","fri":"发车"},"availableDays":["mon","tue","wed","thu","fri"],"dispatchNotes":"","remark":"原124改25","startDate":""},{"province":"浙江省","city":"宁波市","district":"余姚","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"","fri":"—"},"availableDays":["tue"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"宁波市","district":"慈溪","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"—","fri":"—"},"availableDays":["tue"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"宁波市","district":"北仑区","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"—","thu":"发车","fri":""},"availableDays":["mon","thu"],"dispatchNotes":"","remark":"15改14","startDate":""},{"province":"浙江省","city":"绍兴市","district":"绍兴城区","route":"浙江绍兴线","frequency":"1-2次/周","schedule":{"mon":"","tue":"发车","wed":"","thu":"","fri":"发车"},"availableDays":["tue","fri"],"dispatchNotes":"","remark":"原24改成25","startDate":"2022-04-16"},{"province":"浙江省","city":"绍兴市","district":"上虞","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"","thu":"","fri":"发车"},"availableDays":["tue","fri"],"dispatchNotes":"","remark":"原24改成25","startDate":""},{"province":"浙江省","city":"绍兴市","district":"嵊州","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"—","fri":""},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"增加周三","startDate":""},{"province":"浙江省","city":"绍兴市","district":"新昌","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"—","fri":""},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"增加周三","startDate":""},{"province":"浙江省","city":"绍兴市","district":"诸暨","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原35改24","startDate":""},{"province":"浙江省","city":"台州市","district":"台州城区","route":"浙江台州线","frequency":"1-3次/周","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"—","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"增加周五","startDate":"预计5月16日上线"},{"province":"浙江省","city":"台州市","district":"临海","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"发车","thu":"—","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"增加周一","startDate":""},{"province":"浙江省","city":"台州市","district":"仙居","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"—","thu":"发车","fri":"—"},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原周一改24","startDate":""},{"province":"浙江省","city":"台州市","district":"天台","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"—","thu":"发车","fri":"—"},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原周一改24","startDate":""},{"province":"浙江省","city":"台州市","district":"三门","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"—","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原周一改24","startDate":""},{"province":"浙江省","city":"台州市","district":"温岭","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"原24改成135","startDate":""},{"province":"浙江省","city":"台州市","district":"玉环","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"发车","thu":"","fri":"—"},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"原周四改13","startDate":""},{"province":"浙江省","city":"温州市","district":"温州城区","route":"浙江温州线","frequency":"1-4次/周","schedule":{"mon":"发车","tue":"发车","wed":"发车","thu":"发车","fri":"发车"},"availableDays":["mon","tue","wed","thu","fri"],"dispatchNotes":"","remark":"无变化","startDate":"2022-04-16"},{"province":"浙江省","city":"温州市","district":"乐清","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"—","thu":"—","fri":"发车"},"availableDays":["tue","fri"],"dispatchNotes":"","remark":"周一改25","startDate":""},{"province":"浙江省","city":"温州市","district":"永嘉","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"—","thu":"—","fri":"发车"},"availableDays":["tue","fri"],"dispatchNotes":"","remark":"周一改25","startDate":""},{"province":"浙江省","city":"温州市","district":"苍南","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"—","fri":"—"},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"周二改13","startDate":""},{"province":"浙江省","city":"温州市","district":"青田","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"","thu":"—","fri":"发车"},"availableDays":["tue","fri"],"dispatchNotes":"","remark":"原周三改25","startDate":""},{"province":"浙江省","city":"温州市","district":"瑞安","route":"","frequency":"","schedule":{"mon":"发车","tue":"—","wed":"发车","thu":"","fri":""},"availableDays":["mon","wed"],"dispatchNotes":"","remark":"原周五改13","startDate":""},{"province":"浙江省","city":"温州市","district":"平阳","route":"","frequency":"","schedule":{"mon":"—","tue":"—","wed":"—","thu":"发车","fri":""},"availableDays":["thu"],"dispatchNotes":"","remark":"原周五改周四","startDate":""},{"province":"浙江省","city":"金华市","district":"金华城区","route":"浙江金华线","frequency":"1-3次/周","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"无变化","startDate":"2022-04-16"},{"province":"浙江省","city":"金华市","district":"浦江","route":"","frequency":"","schedule":{"mon":"","tue":"","wed":"发车","thu":"","fri":"发车"},"availableDays":["wed","fri"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"金华市","district":"义乌","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"金华市","district":"东阳","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原25改24","startDate":""},{"province":"浙江省","city":"金华市","district":"兰溪","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"原3改成135","startDate":""},{"province":"浙江省","city":"金华市","district":"磐安","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"增加周二","startDate":""},{"province":"浙江省","city":"金华市","district":"武义","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"","thu":"","fri":""},"availableDays":["tue"],"dispatchNotes":"","remark":"原4改2","startDate":""},{"province":"浙江省","city":"金华市","district":"永康","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"","thu":"","fri":""},"availableDays":["tue"],"dispatchNotes":"","remark":"原4改2","startDate":""},{"province":"浙江省","city":"衢州市","district":"衢州城区","route":"浙江衢丽线","frequency":"1-3次/周","schedule":{"mon":"发车","tue":"—","wed":"发车","thu":"","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"原14改成135","startDate":"2022-04-16"},{"province":"浙江省","city":"衢州市","district":"龙游","route":"","frequency":"","schedule":{"mon":"发车","tue":"","wed":"发车","thu":"","fri":"发车"},"availableDays":["mon","wed","fri"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"衢州市","district":"常山","route":"","frequency":"","schedule":{"mon":"—","tue":"","wed":"","thu":"发车","fri":""},"availableDays":["thu"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"衢州市","district":"江山","route":"","frequency":"","schedule":{"mon":"—","tue":"","wed":"","thu":"发车","fri":""},"availableDays":["thu"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"衢州市","district":"开化","route":"","frequency":"","schedule":{"mon":"","tue":"","wed":"","thu":"发车","fri":""},"availableDays":["thu"],"dispatchNotes":"","remark":"周一改周四","startDate":""},{"province":"浙江省","city":"丽水市","district":"丽水城区","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原235改24","startDate":""},{"province":"浙江省","city":"丽水市","district":"缙云","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"—","fri":"—"},"availableDays":["tue"],"dispatchNotes":"","remark":"无变化","startDate":""},{"province":"浙江省","city":"丽水市","district":"云和","route":"","frequency":"","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原5改成24","startDate":""},{"province":"浙江省","city":"丽水市","district":"遂昌","route":"","frequency":"温控箱","schedule":{"mon":"","tue":"","wed":"","thu":"发车","fri":""},"availableDays":["thu"],"dispatchNotes":"","remark":"无变化","startDate":"2022-04-16"},{"province":"浙江省","city":"舟山市","district":"舟山城区","route":"","frequency":"","schedule":{"mon":"","tue":"发车","wed":"","thu":"","fri":""},"availableDays":["tue"],"dispatchNotes":"","remark":"","startDate":""},{"province":"浙江省","city":"丽水市","district":"景宁","route":"","frequency":"2次/月","schedule":{"mon":"—","tue":"发车","wed":"—","thu":"发车","fri":""},"availableDays":["tue","thu"],"dispatchNotes":"","remark":"原5改成24","startDate":""}];
-    const weekdayKeys = ["sun","mon","tue","wed","thu","fri","sat"];
-    const weekdayLabel = { mon: "周一", tue: "周二", wed: "周三", thu: "周四", fri: "周五" };
-    const provinceEl = document.querySelector("#province");
-    const cityEl = document.querySelector("#city");
-    const districtEl = document.querySelector("#district");
-    const shipDateEl = document.querySelector("#shipDate");
-    const extraDaysEl = document.querySelector("#extraDays");
-    const keywordEl = document.querySelector("#keyword");
-    const matchesEl = document.querySelector("#matches");
-    const etaDaysEl = document.querySelector("#etaDays");
-    const summaryEl = document.querySelector("#summary");
-    const nextDispatchEl = document.querySelector("#nextDispatch");
-    const waitDaysEl = document.querySelector("#waitDays");
-    const arrivalDateEl = document.querySelector("#arrivalDate");
-    const shareTextEl = document.querySelector("#shareText");
-    const metaPillsEl = document.querySelector("#metaPills");
-    function uniq(values) { return [...new Set(values)].sort((a,b) => a.localeCompare(b, "zh-Hans-CN")); }
-    function setOptions(select, values, fallback = "全部") {
-      const current = select.value;
-      select.innerHTML = "";
-      const all = document.createElement("option"); all.value = ""; all.textContent = fallback; select.appendChild(all);
-      values.forEach((value) => { const option = document.createElement("option"); option.value = value; option.textContent = value; select.appendChild(option); });
-      if (values.includes(current)) select.value = current;
-    }
-    function formatDate(date) { return new Intl.DateTimeFormat("zh-CN", {year:"numeric", month:"2-digit", day:"2-digit"}).format(date); }
-    function parseDate(value) { return value ? new Date(`${value}T00:00:00`) : null; }
-    function addDays(date, days) { const next = new Date(date); next.setDate(next.getDate() + days); return next; }
-    function scheduleText(schedule) { return ["mon","tue","wed","thu","fri"].map((key) => `${weekdayLabel[key]} ${schedule[key] || "无班次"}`).join(" / "); }
-    function getFilteredData() {
-      const province = provinceEl.value.trim(); const city = cityEl.value.trim(); const district = districtEl.value.trim(); const keyword = keywordEl.value.trim();
-      return DATA.filter((item) => {
-        if (province && item.province !== province) return false;
-        if (city && item.city !== city) return false;
-        if (district && item.district !== district) return false;
-        if (keyword) {
-          const text = `${item.province} ${item.city} ${item.district} ${item.route} ${item.remark}`.toLowerCase();
-          if (!text.includes(keyword.toLowerCase())) return false;
-        }
-        return true;
-      });
-    }
-    function findNextDispatch(item, baseDate) {
-      for (let offset = 0; offset < 7; offset += 1) { const candidate = addDays(baseDate, offset); const key = weekdayKeys[candidate.getDay()]; if (item.availableDays.includes(key)) return { offset, date: candidate, key }; }
-      return null;
-    }
-    function renderMatches(rows) {
-      if (!rows.length) { matchesEl.innerHTML = '<div class="empty">没有找到符合条件的线路，请换个区县名称或放宽筛选。</div>'; return; }
-      matchesEl.innerHTML = rows.map((row) => `
-        <article class="row-card">
-          <h4>${row.province} / ${row.city} / ${row.district}</h4>
-          <p><strong>班次：</strong>${scheduleText(row.schedule)}</p>
-          <p><strong>路线：</strong>${row.route || "未标注"}${row.frequency ? ` · ${row.frequency}` : ""}</p>
-          <p><strong>备注：</strong>${row.remark || "无"}</p>
-          <p><strong>特殊说明：</strong>${row.dispatchNotes || "无"}</p>
-          <p><strong>生效时间：</strong>${row.startDate || "表中未标注"}</p>
-        </article>`).join("");
-    }
-    function pickPrimaryRow(rows) {
-      if (districtEl.value) return rows[0];
-      return rows.slice().sort((a,b) => ((b.route ? 1 : 0) + b.availableDays.length) - ((a.route ? 1 : 0) + a.availableDays.length))[0];
-    }
-    function updateMetaPills(row) {
-      const pills = [row.route && `路线：${row.route}`, row.frequency && `频次：${row.frequency}`, row.startDate && `生效：${row.startDate}`, row.dispatchNotes && `特殊：${row.dispatchNotes}`].filter(Boolean);
-      metaPillsEl.innerHTML = pills.map((pill) => `<span class="pill">${pill}</span>`).join("");
-    }
-    function buildShareText(row, result) {
-      return [`【深海冷链时效预测】`,`目的地：${row.province}${row.city}${row.district}`,`寄出日期：${formatDate(result.shipDate)}`,`下次可发车：${result.nextDispatchLabel}`,`等待班次：${result.waitDays}天`,`附加运输：${result.extraDays}天`,`预计送达：${result.arrivalLabel}`,`参考班次：${scheduleText(row.schedule)}`,row.route ? `路线：${row.route}` : "",row.remark ? `备注：${row.remark}` : "",`说明：该结果按班次表估算，仅供快速沟通参考。`].filter(Boolean).join("\n");
-    }
-    function predict() {
-      const rows = getFilteredData(); renderMatches(rows);
-      if (!rows.length) { etaDaysEl.textContent = "-"; summaryEl.textContent = "没有匹配线路，暂时无法预测。"; nextDispatchEl.textContent = "-"; waitDaysEl.textContent = "-"; arrivalDateEl.textContent = "-"; shareTextEl.value = ""; metaPillsEl.innerHTML = ""; return; }
-      const shipDate = parseDate(shipDateEl.value) || new Date(); const extraDays = Math.max(0, Number(extraDaysEl.value || 0)); const row = pickPrimaryRow(rows); const next = findNextDispatch(row, shipDate);
-      if (!next) { etaDaysEl.textContent = "-"; summaryEl.textContent = "这条线路没有可用班次数据。"; nextDispatchEl.textContent = "-"; waitDaysEl.textContent = "-"; arrivalDateEl.textContent = "-"; shareTextEl.value = ""; metaPillsEl.innerHTML = ""; return; }
-      const totalDays = next.offset + extraDays; const arrival = addDays(shipDate, totalDays); const nextDispatchLabel = `${formatDate(next.date)} ${weekdayLabel[next.key]}`; const arrivalLabel = formatDate(arrival);
-      etaDaysEl.textContent = `${totalDays}天`; summaryEl.textContent = `${row.city}${row.district} 按当前班次表，最近一次可发车在 ${nextDispatchLabel}，等待 ${next.offset} 天；加上附加运输 ${extraDays} 天后，预计 ${arrivalLabel} 送达。`; nextDispatchEl.textContent = nextDispatchLabel; waitDaysEl.textContent = `${next.offset}天`; arrivalDateEl.textContent = arrivalLabel; updateMetaPills(row); shareTextEl.value = buildShareText(row, { shipDate, nextDispatchLabel, waitDays: next.offset, extraDays, arrivalLabel });
-    }
-    function refreshCities() { const province = provinceEl.value; const cities = uniq(DATA.filter((item) => !province || item.province === province).map((item) => item.city)); setOptions(cityEl, cities, "全部城市"); refreshDistricts(); }
-    function refreshDistricts() { const province = provinceEl.value; const city = cityEl.value; const districts = uniq(DATA.filter((item) => { if (province && item.province !== province) return false; if (city && item.city !== city) return false; return true; }).map((item) => item.district)); setOptions(districtEl, districts, "全部区县"); predict(); }
-    function setToday() { const now = new Date(); const year = now.getFullYear(); const month = `${now.getMonth() + 1}`.padStart(2, "0"); const day = `${now.getDate()}`.padStart(2, "0"); shipDateEl.value = `${year}-${month}-${day}`; }
-    document.querySelector("#predictBtn").addEventListener("click", predict);
-    document.querySelector("#copyBtn").addEventListener("click", async () => { if (!shareTextEl.value.trim()) predict(); if (!shareTextEl.value.trim()) return; await navigator.clipboard.writeText(shareTextEl.value); summaryEl.textContent = `${summaryEl.textContent} 已复制结果文案。`; });
-    provinceEl.addEventListener("change", refreshCities); cityEl.addEventListener("change", refreshDistricts); districtEl.addEventListener("change", predict); shipDateEl.addEventListener("change", predict); extraDaysEl.addEventListener("input", predict); keywordEl.addEventListener("input", predict);
-    setOptions(provinceEl, uniq(DATA.map((item) => item.province)), "全部省份"); setToday(); refreshCities();
-  </script>
-</body>
-</html>
+    const BOX_DATA = [{"始发省":"浙江省","始发市":"湖州市","到达省":"安徽省","到达市":"马鞍山市","流向类型":"异地流向","EV-6":143,"EV-14":182,"EV-32":791,"EV-60":950,"EV-96":1195,"EV-128":1339},{"始发省":"浙江省","始发市":"湖州市","到达省":"安徽省","到达市":"芜湖市","流向类型":"异地流向","EV-6":143,"EV-14":182,"EV-32":791,"EV-60":950,"EV-96":1195,"EV-128":1339},{"始发省":"浙江省","始发市":"湖州市","到达省":"安徽省","到达市":"宣城市","流向类型":"异地流向","EV-6":143,"EV-14":182,"EV-32":791,"EV-60":950,"EV-96":1195,"EV-128":1339}
